@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monsieur — Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#0c0d10;
+  --panel:#141519;
+  --panel-2:#1b1c21;
+  --line:#26272d;
+  --text:#e7e6e2;
+  --dim:#8a8b92;
+  --accent:#5fb98c;
+  --danger:#c5605a;
+  --warn:#c9a227;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; }
+a{ color:inherit; text-decoration:none; }
+button{ font-family:inherit; cursor:pointer; }
+.mono{ font-family:var(--mono); }
+
+.app{ display:grid; grid-template-columns:230px 1fr; min-height:100vh; }
+
+/* sidebar */
+.sidebar{ background:var(--panel); border-right:1px solid var(--line); padding:22px 16px; display:flex; flex-direction:column; }
+.brand{ font-weight:700; font-size:16px; letter-spacing:-0.01em; padding:6px 10px 24px; display:flex; align-items:center; gap:8px; }
+.brand .tag{ font-size:10px; background:var(--panel-2); border:1px solid var(--line); padding:2px 6px; border-radius:3px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; }
+.navitem{ display:flex; align-items:center; gap:10px; padding:10px 10px; border-radius:6px; color:var(--dim); font-size:13px; margin-bottom:2px; }
+.navitem.active{ background:var(--panel-2); color:var(--text); }
+.navitem:hover{ color:var(--text); }
+.sidebar-foot{ margin-top:auto; padding-top:20px; border-top:1px solid var(--line); }
+.back-shop{ font-size:12px; color:var(--dim); display:flex; align-items:center; gap:6px; padding:10px; }
+.back-shop:hover{ color:var(--text); }
+
+/* main */
+.main{ padding:28px 36px 60px; }
+.topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; }
+.topbar h1{ font-size:20px; font-weight:600; }
+.topbar p{ color:var(--dim); font-size:13px; margin-top:2px; }
+.btn{ padding:10px 16px; border-radius:6px; font-size:13px; font-weight:500; border:1px solid var(--line); }
+.btn-accent{ background:var(--accent); color:#0c0d10; border:none; }
+.btn-accent:hover{ opacity:0.9; }
+
+/* stat cards */
+.stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+.stat{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px 18px; }
+.stat .label{ font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; }
+.stat .value{ font-size:24px; font-weight:600; margin-top:6px; font-family:var(--mono); }
+.stat .value.warn{ color:var(--warn); }
+
+/* layout: form + table */
+.grid-2{ display:grid; grid-template-columns:340px 1fr; gap:20px; align-items:start; }
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:20px; }
+.panel h3{ font-size:14px; margin-bottom:16px; font-weight:600; }
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:11px; color:var(--dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; }
+.field input, .field select, .field textarea{
+  width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:6px;
+  padding:9px 10px; color:var(--text); font-size:13px; font-family:inherit;
+}
+.field textarea{ resize:vertical; min-height:60px; }
+.field-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.hint{ font-size:11px; color:var(--dim); margin-top:5px; }
+.hint.err{ color:var(--danger); }
+
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+thead th{ text-align:left; padding:10px 12px; font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1px solid var(--line); }
+tbody td{ padding:12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+tbody tr:hover{ background:var(--panel-2); }
+.swatch-cell{ display:flex; align-items:center; gap:8px; }
+.swatch{ width:16px; height:16px; border-radius:4px; border:1px solid var(--line); flex-shrink:0; }
+.pill{ font-size:11px; padding:3px 8px; border-radius:20px; font-weight:500; }
+.pill.active{ background:rgba(95,185,140,0.15); color:var(--accent); }
+.pill.draft{ background:rgba(138,139,146,0.15); color:var(--dim); }
+.pill.sale{ background:rgba(201,162,39,0.15); color:var(--warn); }
+
+/* pipeline sub-nav */
+.pipe-nav{ display:flex; gap:6px; margin-bottom:20px; border-bottom:1px solid var(--line); }
+.pipe-btn{
+  background:none; border:none; color:var(--dim); font-size:13px; font-weight:500;
+  padding:10px 4px; margin-right:18px; border-bottom:2px solid transparent; cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+}
+.pipe-btn .count{ background:var(--panel-2); color:var(--dim); font-size:11px; padding:1px 7px; border-radius:20px; font-family:var(--mono); }
+.pipe-btn.active{ color:var(--text); border-bottom-color:var(--accent); }
+.pipe-btn.active .count{ background:rgba(95,185,140,0.15); color:var(--accent); }
+.pipe-panel{ display:none; }
+.pipe-panel.active{ display:block; }
+.stage-note{ font-size:12px; color:var(--dim); margin-bottom:18px; line-height:1.6; max-width:640px; }
+.ready-item, .needsinfo-item{
+  display:flex; justify-content:space-between; align-items:center; gap:12px;
+  padding:12px 14px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; background:var(--panel-2);
+}
+.ready-item{ border-color:rgba(95,185,140,0.3); }
+.needsinfo-item{ border-color:rgba(201,162,39,0.3); }
+.missing-tags{ display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
+.missing-tag{ font-size:10px; color:var(--warn); background:rgba(201,162,39,0.12); padding:2px 6px; border-radius:3px; }
+.stock-low{ color:var(--danger); font-weight:600; }
+.row-actions{ display:flex; gap:8px; }
+.row-actions button{ font-size:11px; color:var(--dim); border:1px solid var(--line); border-radius:4px; padding:4px 8px; background:transparent; }
+.row-actions button:hover{ color:var(--text); }
+.toast{
+  position:fixed; bottom:24px; right:24px; background:var(--panel); border:1px solid var(--accent);
+  color:var(--text); padding:12px 18px; border-radius:8px; font-size:13px; opacity:0; transform:translateY(10px);
+  transition:all 0.25s; z-index:99;
+}
+.toast.show{ opacity:1; transform:translateY(0); }
+.empty-row td{ text-align:center; color:var(--dim); padding:30px; }
+.vendor-card{ background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:12px; }
+.vendor-card .vhead{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.vendor-card .vname{ font-weight:600; }
+.contact-row td{ padding:6px 4px; border:none; font-size:12px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">Monsieur <span class="tag">Admin</span></div>
+    <div class="navitem active" onclick="showTab('products')" data-tab="products">📦 Products</div>
+    <div class="navitem" onclick="showTab('content')" data-tab="content">🎨 Site content</div>
+    <div class="navitem" onclick="showTab('marketing')" data-tab="marketing">📣 Marketing</div>
+    <div class="navitem" onclick="showTab('inventory')" data-tab="inventory">🔄 Pipeline</div>
+    <div class="navitem">🚚 Orders</div>
+    <div class="navitem">⭐ Reviews</div>
+    <div class="sidebar-foot">
+      <div style="font-size:12px; color:var(--dim); padding:10px; display:flex; justify-content:space-between; align-items:center;">
+        <span id="adminName">—</span>
+        <button onclick="signOut()" style="background:none;border:none;color:var(--dim);font-size:11px;text-decoration:underline;">Sign out</button>
+      </div>
+      <a href="monsieur_shop.html" target="_blank" class="back-shop">↗ View storefront</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Product catalog</h1>
+        <p>Changes here sync to the storefront automatically — no separate step.</p>
+      </div>
+      <a href="monsieur_shop.html" target="_blank" class="btn" style="text-decoration:none;">↗ View as shopper</a>
+    </div>
+
+    <div class="stats" style="grid-template-columns:repeat(5,1fr);">
+      <div class="stat"><div class="label">Active products</div><div class="value" id="statActive">0</div></div>
+      <div class="stat"><div class="label">Drafts awaiting publish</div><div class="value warn" id="statDrafts">0</div></div>
+      <div class="stat"><div class="label">On sale</div><div class="value" id="statSale">0</div></div>
+      <div class="stat"><div class="label">Low stock</div><div class="value warn" id="statLow">0</div></div>
+      <div class="stat"><div class="label">Out of stock</div><div class="value" id="statOut">0</div></div>
+    </div>
+
+    <div id="tab-content" class="panel" style="display:none; margin-bottom:20px;">
+      <h3>Storefront content</h3>
+      <p class="hint" style="margin-bottom:16px">These fields control the hero, navigation, and footer that shoppers see — no code changes needed.</p>
+      <div class="field-row">
+        <div class="field">
+          <label>Hero eyebrow</label>
+          <input type="text" id="sEyebrow">
+        </div>
+        <div class="field">
+          <label>Footer note</label>
+          <input type="text" id="sFooter">
+        </div>
+      </div>
+      <div class="field">
+        <label>Hero title — line 1</label>
+        <input type="text" id="sHero1">
+      </div>
+      <div class="field">
+        <label>Hero title — line 2 (emphasis, italic)</label>
+        <input type="text" id="sHero2">
+      </div>
+      <div class="field">
+        <label>Hero paragraph</label>
+        <textarea id="sHeroBody"></textarea>
+      </div>
+      <div class="field">
+        <label>Category chips (comma-separated, order matters)</label>
+        <input type="text" id="sCategories" placeholder="Silk, Cotton, Wool">
+      </div>
+
+      <div style="border-top:1px solid var(--line); padding-top:16px; margin-top:6px;">
+        <h3 style="margin-bottom:12px;">Promo banner</h3>
+        <p class="hint" style="margin-bottom:14px;">Shows between the hero and the catalog. Leave "Enabled" off to hide it without losing your settings. Images are automatically resized before upload so the homepage never loads an oversized file.</p>
+        <div class="field-row">
+          <div class="field">
+            <label>Enabled</label>
+            <select id="sBannerEnabled">
+              <option value="false">Off</option>
+              <option value="true">On</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Media type</label>
+            <select id="sBannerType">
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Media URL</label>
+          <input type="text" id="sBannerUrl" placeholder="https://... or upload below">
+          <input type="file" id="sBannerFile" accept="image/*,video/*" style="margin-top:6px; font-size:12px; width:100%;">
+          <div class="hint" id="bannerUploadHint"></div>
+        </div>
+        <div class="field">
+          <label>Link (optional — makes the banner clickable)</label>
+          <input type="text" id="sBannerLink" placeholder="e.g. monsieur_shop.html?cat=Silk">
+        </div>
+        <div class="field">
+          <label>Caption (optional, overlaid on the banner)</label>
+          <input type="text" id="sBannerCaption" placeholder="e.g. New arrivals — Autumn 2026">
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-accent" id="saveContentBtn" style="margin-top:16px;">Save content — updates storefront live</button>
+    </div>
+
+    <div id="tab-marketing" style="display:none; margin-bottom:20px;">
+
+      <div class="stats" style="grid-template-columns:repeat(3,1fr); margin-bottom:20px;">
+        <div class="stat"><div class="label">Active discount codes</div><div class="value" id="statCodes">0</div></div>
+        <div class="stat"><div class="label">Active campaigns</div><div class="value" id="statCampaigns">0</div></div>
+        <div class="stat"><div class="label">Email subscribers</div><div class="value" id="statSubs">0</div></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="panel">
+          <h3>New discount code</h3>
+          <form id="discountForm">
+            <div class="field">
+              <label>Code</label>
+              <input type="text" id="dCode" required placeholder="SUMMER20" style="text-transform:uppercase">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Type</label>
+                <select id="dType">
+                  <option value="percent">Percent off</option>
+                  <option value="fixed_amount">Fixed amount off</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Value</label>
+                <input type="number" id="dValue" required min="0" step="0.01" placeholder="20">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Min order (EGP)</label>
+                <input type="number" id="dMinOrder" min="0" value="0">
+              </div>
+              <div class="field">
+                <label>Usage limit</label>
+                <input type="number" id="dUsageLimit" min="1" placeholder="unlimited">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-accent" style="width:100%">Create code</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3>Active codes</h3>
+          <table>
+            <thead><tr><th>Code</th><th>Discount</th><th>Used</th><th></th></tr></thead>
+            <tbody id="discountTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h3>New campaign</h3>
+          <form id="campaignForm">
+            <div class="field">
+              <label>Campaign name</label>
+              <input type="text" id="cName" required placeholder="Summer Cravates Launch">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Channel</label>
+                <select id="cChannel">
+                  <option value="instagram">Instagram</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="google_ads">Google Ads</option>
+                  <option value="email">Email</option>
+                  <option value="influencer">Influencer</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Budget (EGP)</label>
+                <input type="number" id="cBudget" min="0" placeholder="optional">
+              </div>
+            </div>
+            <div class="field">
+              <label>UTM campaign slug</label>
+              <input type="text" id="cUtm" required placeholder="summer26_launch">
+              <div class="hint" id="utmPreview" style="font-family:var(--mono)"></div>
+            </div>
+            <button type="submit" class="btn btn-accent" style="width:100%">Create campaign</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3>Campaign performance</h3>
+          <table>
+            <thead><tr><th>Campaign</th><th>Orders</th><th>Revenue</th></tr></thead>
+            <tbody id="campaignTable"></tbody>
+          </table>
+          <div class="hint" style="margin-top:14px;">Revenue populates automatically as orders come in tagged with each campaign's UTM slug — nothing to update by hand.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="tab-inventory" style="display:none; margin-bottom:20px;">
+
+      <div class="stats" style="margin-bottom:20px;">
+        <div class="stat"><div class="label">Total units on hand</div><div class="value" id="statTotalUnits">0</div></div>
+        <div class="stat"><div class="label">Below reorder level</div><div class="value warn" id="statReorder">0</div></div>
+        <div class="stat"><div class="label">Vendors</div><div class="value" id="statVendors">0</div></div>
+        <div class="stat"><div class="label">Needed from vendors</div><div class="value warn" id="statNeeded">0</div></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px;">
+        <h3>Stock levels</h3>
+        <p class="hint" style="margin-bottom:14px;">Set a reorder threshold per product, assign a vendor, and restock in one click — inventory updates flow straight to the storefront.</p>
+        <table>
+          <thead><tr><th>Product</th><th>SKU</th><th>On hand</th><th>Reorder at</th><th>Vendor</th><th>Restock</th></tr></thead>
+          <tbody id="stockTable"></tbody>
+        </table>
+      </div>
+
+      <!-- ============================================================
+           PIPELINE — every product lot moves through three stages, in
+           order. Vendors sit off to the side since they're referenced
+           by all three, not a stage themselves.
+             Requested — what's needed, whether it's more of a product
+                         already in the catalog (draft or published) or
+                         a brand-new idea that isn't a product yet.
+             Received  — a vendor shipment actually lands. Restock items
+                         bump existing stock; new items are where a new
+                         product row actually gets created (as a draft).
+             Prepared  — drafts created above, checked for the info a
+                         listing needs (image, price, category, stock)
+                         before a human explicitly publishes them.
+      ============================================================ -->
+      <div class="pipe-nav">
+        <button class="pipe-btn active" data-pipe="requested" onclick="showPipeline('requested')">
+          📋 Requested <span class="count" id="countRequested">0</span>
+        </button>
+        <button class="pipe-btn" data-pipe="received" onclick="showPipeline('received')">
+          📥 Received <span class="count" id="countReceived">0</span>
+        </button>
+        <button class="pipe-btn" data-pipe="prepared" onclick="showPipeline('prepared')">
+          ✅ Prepared <span class="count" id="countPrepared">0</span>
+        </button>
+        <button class="pipe-btn" data-pipe="vendors" onclick="showPipeline('vendors')">
+          🏭 Vendors <span class="count" id="countVendors">0</span>
+        </button>
+      </div>
+
+      <!-- ---------------- STAGE 1 — REQUESTED ---------------- -->
+      <div id="pipe-requested" class="pipe-panel active">
+      <p class="stage-note">Anything you need from a vendor — restocking a product already in the catalog (published or still a draft), or a brand-new idea that doesn't exist yet. Nothing here touches stock until it's logged as <strong>Received</strong>.</p>
+
+        <div class="panel">
+          <div id="lowStockSuggestions" style="margin-bottom:14px;"></div>
+
+          <form id="requestForm" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:16px;">
+            <div class="field" style="margin-bottom:0; flex:2; min-width:160px;">
+              <label>Item</label>
+              <input type="text" id="rItemName" required placeholder="Product name or idea">
+            </div>
+            <div class="field" style="margin-bottom:0; flex:1; min-width:110px;">
+              <label>Category</label>
+              <input type="text" id="rCategory" placeholder="Silk">
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label>Colour</label>
+              <input type="color" id="rColor" value="#7c2430" style="padding:2px;height:37px; width:44px;">
+            </div>
+            <div class="field" style="margin-bottom:0; flex:1; min-width:120px;">
+              <label>Vendor</label>
+              <select id="rVendor"><option value="">Any</option></select>
+            </div>
+            <div class="field" style="margin-bottom:0; width:70px;">
+              <label>Qty</label>
+              <input type="number" id="rQty" min="1" value="1">
+            </div>
+            <div class="field" style="margin-bottom:0; width:110px;">
+              <label>Priority</label>
+              <select id="rPriority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-accent">Add to list</button>
+          </form>
+
+          <table>
+            <thead><tr><th>Item</th><th>Vendor</th><th>Qty</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+            <tbody id="requestTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ---------------- STAGE 2 — RECEIVED ---------------- -->
+      <div id="pipe-received" class="pipe-panel">
+      <p class="stage-note">A vendor shipment actually lands. Log it here — this is the only place new products get created (as drafts) or existing stock gets bumped. If an item started life as a <strong>Requested</strong> row, it's marked fulfilled automatically once you save the lot.</p>
+
+        <div class="panel">
+          <h3>New lot (vendor shipment)</h3>
+          <p class="hint" style="margin-bottom:14px;">Log everything that arrived in one shipment — vendor, cost per piece, fees, and whether each item is a brand-new product or a restock. Restock items add straight onto existing stock. New items are created as <strong>draft</strong> products with this stock already loaded in — they move to the <strong>Prepared</strong> tab from here, not straight to the storefront.</p>
+          <div class="field-row">
+            <div class="field">
+              <label>Vendor</label>
+              <select id="lVendor" required><option value="">Select vendor…</option></select>
+            </div>
+            <div class="field">
+              <label>Lot reference</label>
+              <input type="text" id="lReference" placeholder="e.g. AUG-01">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Received date</label>
+              <input type="date" id="lDate">
+            </div>
+            <div class="field">
+              <label>Shipment days</label>
+              <input type="number" id="lShipDays" min="0" placeholder="e.g. 5">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Shipment fee (EGP)</label>
+              <input type="number" id="lShipFee" min="0" step="0.01" value="0">
+            </div>
+            <div class="field">
+              <label>Commission fee (EGP)</label>
+              <input type="number" id="lCommission" min="0" step="0.01" value="0">
+            </div>
+          </div>
+          <div class="field">
+            <label>Notes</label>
+            <textarea id="lNotes" placeholder="Optional notes about this shipment"></textarea>
+          </div>
+
+          <div style="border-top:1px solid var(--line); padding-top:14px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="margin:0;">Items in this lot</h3>
+              <button type="button" class="btn" onclick="addLotItemRow()">+ Add item</button>
+            </div>
+            <div id="lotItemsWrap"></div>
+            <div class="hint">Add at least one item — pick "Restock" to bump an existing product's stock, or "New product" to log something not in the catalog yet.</div>
+          </div>
+
+          <button type="button" class="btn btn-accent" style="width:100%; margin-top:16px;" id="saveLotBtn" onclick="saveLot()">Save lot — updates stock</button>
+        </div>
+
+        <div class="panel" style="margin-top:20px;">
+          <h3>Lot history</h3>
+          <table>
+            <thead><tr><th>Lot</th><th>Vendor</th><th>Items</th><th>Landed cost</th><th>Fees</th><th>Received</th></tr></thead>
+            <tbody id="lotTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ---------------- STAGE 3 — PREPARED ---------------- -->
+      <div id="pipe-prepared" class="pipe-panel">
+      <p class="stage-note">Every draft product currently sitting between "received" and "live" — whether it came from a lot or was created directly. <strong>Ready to publish</strong> means it already has an image, price, category, and stock; <strong>Needs info</strong> lists exactly what's missing before it can go live.</p>
+
+        <div class="panel" style="margin-bottom:16px;">
+          <h3>Ready to publish</h3>
+          <div id="preparedReadyList"></div>
+        </div>
+        <div class="panel">
+          <h3>Needs info</h3>
+          <div id="preparedNeedsInfoList"></div>
+        </div>
+      </div>
+
+      <!-- ---------------- VENDORS (referenced by all 3 stages) ---------------- -->
+      <div id="pipe-vendors" class="pipe-panel">
+        <div class="grid-2">
+          <div class="panel">
+            <h3 id="vendorFormTitle">Add vendor</h3>
+            <form id="vendorForm">
+              <input type="hidden" id="editVendorId">
+              <div class="field">
+                <label>Vendor name</label>
+                <input type="text" id="vName" required placeholder="e.g. Cairo Silk Mills">
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label>Location</label>
+                  <input type="text" id="vLocation" placeholder="e.g. Ismailia, EG">
+                </div>
+                <div class="field">
+                  <label>Shipment fee (EGP)</label>
+                  <input type="number" id="vShipFee" min="0" step="0.01" value="0">
+                </div>
+              </div>
+              <div class="field">
+                <label>Notes (payment terms, lead time, etc.)</label>
+                <textarea id="vNotes" placeholder="Optional notes"></textarea>
+              </div>
+              <button type="submit" class="btn btn-accent" style="width:100%">Save vendor</button>
+              <button type="button" class="btn" id="cancelVendorEdit" style="width:100%;margin-top:8px;display:none;">Cancel edit</button>
+            </form>
+
+            <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line);">
+              <h3 style="font-size:13px;">Add contact <span id="contactVendorLabel" class="hint"></span></h3>
+              <form id="contactForm">
+                <input type="hidden" id="cVendorId">
+                <div class="field-row">
+                  <div class="field">
+                    <label>Label</label>
+                    <input type="text" id="ctLabel" placeholder="Sales, Warehouse…">
+                  </div>
+                  <div class="field">
+                    <label>Phone</label>
+                    <input type="text" id="ctPhone" placeholder="+20 1xx xxx xxxx">
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Email (optional)</label>
+                  <input type="email" id="ctEmail" placeholder="optional">
+                </div>
+                <button type="submit" class="btn" style="width:100%">Add contact</button>
+                <div class="hint">Click "+ Contact" on a vendor below first, then fill this in.</div>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Vendors</h3>
+            <div id="vendorList"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="tab-products">
+    <div class="grid-2">
+      <div class="panel">
+        <h3 id="formTitle">Add new product</h3>
+        <form id="productForm">
+          <input type="hidden" id="editId">
+          <div class="field-row">
+            <div class="field">
+              <label>HC-ID</label>
+              <input type="text" id="fHcId" placeholder="CV-007" style="text-transform:uppercase">
+            </div>
+            <div class="field">
+              <label>SKU (optional)</label>
+              <input type="text" id="fSku" placeholder="MSR-CR-007">
+            </div>
+          </div>
+          <div class="field">
+            <label>Product name</label>
+            <input type="text" id="fName" required placeholder="e.g. Bordeaux Silk Cravate">
+          </div>
+          <div class="field">
+            <label>Category</label>
+            <input type="text" id="fCategory" required placeholder="Silk">
+          </div>
+          <div class="field">
+            <label>Main image</label>
+            <input type="text" id="fMainImage" placeholder="https://... or upload below">
+            <input type="file" id="fMainImageFile" accept="image/*" style="margin-top:6px; font-size:12px; width:100%;">
+            <div class="hint" id="mainImageUploadHint"></div>
+          </div>
+          <div class="field">
+            <label>Additional images (one URL per line, or upload below)</label>
+            <textarea id="fExtraImages" placeholder="https://...&#10;https://..." style="min-height:70px"></textarea>
+            <input type="file" id="fExtraImagesFile" accept="image/*" multiple style="margin-top:6px; font-size:12px; width:100%;">
+            <div class="hint" id="extraImagesUploadHint"></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Price (EGP)</label>
+              <input type="number" id="fPrice" required min="0" step="0.01">
+            </div>
+            <div class="field">
+              <label>Final price (optional)</label>
+              <input type="number" id="fFinalPrice" min="0" step="0.01" placeholder="leave empty = no discount">
+            </div>
+          </div>
+          <div id="priceHint" class="hint"></div>
+          <div class="field-row">
+            <div class="field">
+              <label>Pattern</label>
+              <select id="fPattern">
+                <option value="solid">Solid</option>
+                <option value="stripe">Stripe</option>
+                <option value="dot">Dot</option>
+                <option value="paisley">Paisley</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Swatch colour</label>
+              <input type="color" id="fColor" value="#7c2430" style="padding:2px;height:37px;">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Stock quantity</label>
+              <input type="number" id="fStock" required min="0" value="10">
+            </div>
+            <div class="field">
+              <label>Status</label>
+              <select id="fStatus">
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Vendor (optional)</label>
+            <select id="fVendor"><option value="">— none —</option></select>
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <textarea id="fDesc" placeholder="Hand-finished silk, woven in small batches…"></textarea>
+          </div>
+          <button type="submit" class="btn btn-accent" style="width:100%">Save product</button>
+          <button type="button" class="btn" id="cancelEdit" style="width:100%;margin-top:8px;display:none;">Cancel edit</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h3>All products</h3>
+        <div id="draftAlertWrap"></div>
+        <table>
+          <thead>
+            <tr><th>Product</th><th>SKU</th><th>Price</th><th>Stock</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="productTable"></tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast">Saved — storefront updated.</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+/* ============================================================
+   MONSIEUR ADMIN — real Supabase CRUD.
+   Every write here lands directly in the tables the storefront
+   reads from (products / inventory / product_media / site_content
+   / discount_codes / marketing_campaigns / vendors / vendor_contacts)
+   — the shop page is subscribed to the same tables via realtime,
+   so changes show up there within a second, no manual "publish" step.
+   Vendors and reorder levels are admin-only data; shoppers never see them.
+
+   STOCK CONSISTENCY — every write path below that touches inventory
+   (product form, quick restock, reorder-level edit, lot receiving)
+   upserts against the SAME key: one row per (product_id, variant_id
+   IS NULL), enforced by a unique partial index in
+   monsieur_pipeline_fixes.sql. That's what makes "stock" a single
+   fact instead of a race between whichever tab last read-then-wrote
+   it — the same product_id is the thread that runs through
+   Requested -> Received -> Prepared -> Products/Stock table.
+============================================================ */
+let PRODUCTS = [];          // merged: products + category name + stock
+let CATEGORIES = [];
+let VENDORS = [];
+let LOTS = [];
+let REQUESTS = [];
+let CURRENT_SESSION = null;
+
+/* ---------------------------------------------------------- */
+/* IMAGE RESIZING — every image upload goes through this before it
+   ever reaches Supabase Storage. Downscales to a max width/height
+   via canvas and re-encodes as WebP at a fixed quality, so a phone
+   photo (often 3000px+ / several MB) never lands on the homepage
+   or a product page at its original size — it arrives already
+   sized for how it's actually displayed, which is both faster to
+   load and cheaper to store. Only ever downscales, never upscales
+   a smaller image, and silently returns the original file if
+   anything about the resize fails (corrupt file, unsupported type,
+   browser without canvas.toBlob('image/webp') support) so an
+   upload can't be blocked by this step.
+/* ---------------------------------------------------------- */
+async function resizeImageFile(file, maxWidth, maxHeight, quality = 0.85){
+  if(!file.type || !file.type.startsWith('image/')) return file;   // videos etc. pass through untouched
+  if(file.type === 'image/gif') return file;                       // animated gifs would lose their animation via canvas
+  try{
+    const bitmap = await createImageBitmap(file);
+    const ratio = Math.min(maxWidth / bitmap.width, maxHeight / bitmap.height, 1);
+    if(ratio === 1) return file;   // already within bounds — don't re-encode for no reason
+
+    const targetW = Math.max(1, Math.round(bitmap.width * ratio));
+    const targetH = Math.max(1, Math.round(bitmap.height * ratio));
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW; canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', quality));
+    if(!blob) return file;   // browser couldn't produce webp — fall back to original rather than fail the upload
+
+    const newName = (file.name || 'image').replace(/\.[^.]+$/, '') + '.webp';
+    return new File([blob], newName, { type: 'image/webp' });
+  }catch(err){
+    console.warn('Image resize skipped, uploading original:', err);
+    return file;
+  }
+}
+
+/* ---------------------------------------------------------- */
+/* IMAGE UPLOAD — Supabase Storage, bucket "product-images"
+   opts.maxWidth/maxHeight/quality tune the resize per use-case:
+   product photos can stay reasonably large since the PDP gallery
+   is the biggest thing that renders them; the homepage banner is
+   wide-but-short (see .site-banner CSS), so it's capped tighter.
+/* ---------------------------------------------------------- */
+async function uploadProductImage(file, opts = {}){
+  const { maxWidth = 1600, maxHeight = 1600, quality = 0.85 } = opts;
+  const toUpload = await resizeImageFile(file, maxWidth, maxHeight, quality);
+  const ext = (toUpload.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await sb.storage.from('product-images')
+    .upload(path, toUpload, { cacheControl: '3600', upsert: false, contentType: toUpload.type || file.type });
+  if(error) throw error;
+  const { data } = sb.storage.from('product-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+document.getElementById('fMainImageFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const hint = document.getElementById('mainImageUploadHint');
+  hint.className = 'hint'; hint.textContent = 'Uploading…';
+  try{
+    const url = await uploadProductImage(file);
+    document.getElementById('fMainImage').value = url;
+    hint.textContent = 'Uploaded ✓';
+  }catch(err){
+    hint.className = 'hint err';
+    hint.textContent = 'Upload failed: ' + (err.message || err);
+  }
+});
+
+document.getElementById('fExtraImagesFile').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files);
+  if(!files.length) return;
+  const hint = document.getElementById('extraImagesUploadHint');
+  hint.className = 'hint'; hint.textContent = `Uploading ${files.length} image(s)…`;
+  try{
+    const urls = [];
+    for(const file of files) urls.push(await uploadProductImage(file));
+    const ta = document.getElementById('fExtraImages');
+    ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + urls.join('\n');
+    hint.textContent = 'Uploaded ✓';
+  }catch(err){
+    hint.className = 'hint err';
+    hint.textContent = 'Upload failed: ' + (err.message || err);
+  }
+});
+
+document.getElementById('sBannerFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const hint = document.getElementById('bannerUploadHint');
+  const isVideo = file.type.startsWith('video');
+  document.getElementById('sBannerType').value = isVideo ? 'video' : 'image';
+
+  if(isVideo){
+    // Can't resize video client-side without a heavy encoder library —
+    // just warn on large files rather than silently uploading something
+    // that'll be slow to load on the homepage.
+    if(file.size > 15 * 1024 * 1024){
+      hint.className = 'hint err';
+      hint.textContent = `This video is ${(file.size/1024/1024).toFixed(1)}MB — consider compressing it before upload, it'll load slowly on the homepage otherwise.`;
+    }else{
+      hint.className = 'hint'; hint.textContent = 'Uploading video…';
+    }
+  }else{
+    hint.className = 'hint'; hint.textContent = 'Resizing and uploading…';
+  }
+
+  try{
+    // Banner is wide-but-short (see .site-banner CSS, max-height 340px) —
+    // capped at 1920 wide / 700 tall so retina screens still look sharp
+    // without shipping a full-resolution original photo to every visitor.
+    const url = await uploadProductImage(file, { maxWidth: 1920, maxHeight: 700, quality: 0.82 });
+    document.getElementById('sBannerUrl').value = url;
+    hint.className = 'hint';
+    hint.textContent = 'Uploaded ✓';
+  }catch(err){
+    hint.className = 'hint err';
+    hint.textContent = 'Upload failed: ' + (err.message || err);
+  }
+});
+
+function slugify(s){
+  return (s||'').toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/(^-|-$)/g,'') || 'item';
+}
+
+/* ---------------------------------------------------------- */
+/* INVENTORY WRITES — every stock-touching path in this file
+   (product form, quick restock, reorder level) goes through one
+   of these two RPCs. Both are backed by the SAME partial unique
+   index (product_id) where variant_id is null, applied server-
+   side in one atomic statement — see set_inventory_stock() /
+   adjust_inventory_stock() in monsieur_pipeline_fixes.sql. That's
+   what keeps "stock" a single fact: two tabs acting on the same
+   product_id at once resolve deterministically instead of racing
+   a client-side read-then-write.
+/* ---------------------------------------------------------- */
+async function setStock(productId, quantity){
+  const { error } = await sb.rpc('set_inventory_stock', { p_product_id: productId, p_quantity: quantity });
+  if(error) throw error;
+}
+async function adjustStock(productId, delta){
+  const { error } = await sb.rpc('adjust_inventory_stock', { p_product_id: productId, p_delta: delta });
+  if(error) throw error;
+}
+async function setReorderLevel(productId, level){
+  const { error } = await sb.rpc('set_inventory_reorder_level', { p_product_id: productId, p_level: level });
+  if(error) throw error;
+}
+
+/* ---------------------------------------------------------- */
+/* ACCESS GUARD                                                */
+/* ---------------------------------------------------------- */
+async function boot(){
+  const session = await requireAdmin();   // redirects if not signed in / not staff
+  if(!session) return;
+  CURRENT_SESSION = session;
+  document.getElementById('adminName').textContent =
+    session.user.user_metadata?.full_name || session.user.email;
+
+  await Promise.all([loadCategories(), loadVendors(), loadContent(), loadMarketing()]);
+  await loadProducts();
+  await Promise.all([loadLots(), loadRequests()]);
+  document.getElementById('lDate').value = new Date().toISOString().slice(0,10);
+
+  subscribeTable('products', loadProducts);
+  subscribeTable('inventory', loadProducts);
+  subscribeTable('categories', loadCategories);
+  subscribeTable('site_content', loadContent);
+  subscribeTable('discount_codes', loadMarketing);
+  subscribeTable('marketing_campaigns', loadMarketing);
+  subscribeTable('email_subscribers', loadMarketing);
+  subscribeTable('vendors', loadVendors);
+  subscribeTable('vendor_contacts', loadVendors);
+  subscribeTable('lots', loadLots);
+  subscribeTable('lot_items', loadLots);
+  subscribeTable('restock_requests', loadRequests);
+}
+
+function signOut(){ signOutAndRedirect('monsieur_login.html'); }
+
+/* ---------------------------------------------------------- */
+/* TABS                                                        */
+/* ---------------------------------------------------------- */
+function showTab(name){
+  document.querySelectorAll('.navitem[data-tab]').forEach(el=>el.classList.toggle('active', el.dataset.tab===name));
+  document.getElementById('tab-products').style.display = name==='products' ? 'block' : 'none';
+  document.getElementById('tab-content').style.display = name==='content' ? 'block' : 'none';
+  document.getElementById('tab-marketing').style.display = name==='marketing' ? 'block' : 'none';
+  document.getElementById('tab-inventory').style.display = name==='inventory' ? 'block' : 'none';
+}
+
+/* ---------------------------------------------------------- */
+/* PIPELINE SUB-NAV — Requested / Received / Prepared / Vendors */
+/* ---------------------------------------------------------- */
+function showPipeline(stage){
+  document.querySelectorAll('.pipe-btn').forEach(el=>el.classList.toggle('active', el.dataset.pipe===stage));
+  document.querySelectorAll('.pipe-panel').forEach(el=>el.classList.toggle('active', el.id===`pipe-${stage}`));
+}
+
+/** Jumps a "needed" row straight into a lot in progress — prefills the
+    vendor and adds one lot-item row so receiving it is a couple of clicks,
+    not re-typing everything that was already written down when requesting it. */
+function startLotFromRequest(requestId){
+  const r = REQUESTS.find(x=>x.id===requestId);
+  if(!r) return;
+  showTab('inventory');
+  showPipeline('received');
+  if(r.vendor_id) document.getElementById('lVendor').value = r.vendor_id;
+
+  addLotItemRow();
+  const row = document.getElementById('lotItemsWrap').lastElementChild;
+  row.dataset.fulfillsRequest = requestId;
+  row.querySelector('.li-qty').value = r.quantity_needed || 1;
+  row.querySelector('.li-category').value = r.category || '';
+  if(r.color) row.querySelector('.li-color').value = r.color;
+
+  if(r.product_id){
+    row.querySelector('.li-type').value = 'restock';
+    toggleLotItemType(row.id);
+    row.querySelector('.li-product').value = r.product_id;
+  }else{
+    row.querySelector('.li-type').value = 'new';
+    toggleLotItemType(row.id);
+    row.querySelector('.li-name').value = r.item_name;
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------------------------------------------------------- */
+/* CATEGORIES — find-or-create by name, typed freeform in the form  */
+/* ---------------------------------------------------------- */
+async function loadCategories(){
+  const { data, error } = await sb.from('categories').select('id,name').order('name');
+  if(!error) CATEGORIES = data || [];
+}
+
+async function findOrCreateCategory(name){
+  const trimmed = name.trim();
+  const existing = CATEGORIES.find(c => c.name.toLowerCase() === trimmed.toLowerCase());
+  if(existing) return existing.id;
+  const { data, error } = await sb.from('categories')
+    .insert({ name: trimmed, slug: slugify(trimmed) })
+    .select('id,name').single();
+  if(error) throw error;
+  CATEGORIES.push(data);
+  return data.id;
+}
+
+/* ---------------------------------------------------------- */
+/* PRODUCTS                                                     */
+/* ---------------------------------------------------------- */
+async function loadProducts(){
+  const [{ data: products, error: pErr }, { data: inventory, error: iErr }] = await Promise.all([
+    sb.from('products').select('*, categories(name)').order('created_at', { ascending:false }),
+    sb.from('inventory').select('product_id, quantity_on_hand, reorder_level')
+  ]);
+  if(pErr){ console.error(pErr); return; }
+  const invByProduct = {};
+  (inventory||[]).forEach(i => { invByProduct[i.product_id] = i; });
+  PRODUCTS = (products||[]).map(p => ({
+    ...p,
+    category_name: p.categories?.name || '',
+    stock: invByProduct[p.id]?.quantity_on_hand ?? 0,
+    reorder_level: invByProduct[p.id]?.reorder_level ?? 5
+  }));
+  renderTable();
+  renderStats();
+  renderVendorSelect();
+  renderStockTable();
+  renderLowStockSuggestions();
+  renderPreparedPanel();
+}
+
+/* ---------------------------------------------------------- */
+/* PREPARED — every draft product, split into "ready to publish"
+   vs "needs info". A draft is ready once it has the four things
+   a live listing actually needs: image, price, category, stock.
+   Nothing here is a separate table — it's the same `products` row,
+   just checked for completeness before you hit Publish.
+/* ---------------------------------------------------------- */
+function draftReadiness(p){
+  const missing = [];
+  if(!p.main_image_url) missing.push('Image');
+  if(!p.price || p.price <= 0) missing.push('Price');
+  if(!p.category_id) missing.push('Category');
+  if(!p.stock || p.stock <= 0) missing.push('Stock');
+  return { ready: missing.length === 0, missing };
+}
+
+function renderPreparedPanel(){
+  const readyEl = document.getElementById('preparedReadyList');
+  const needsEl = document.getElementById('preparedNeedsInfoList');
+  const countEl = document.getElementById('countPrepared');
+  if(!readyEl || !needsEl) return;
+
+  const drafts = PRODUCTS.filter(p=>p.status==='draft');
+  const ready = [], needsInfo = [];
+  drafts.forEach(p=>{
+    const r = draftReadiness(p);
+    (r.ready ? ready : needsInfo).push({ ...p, missing: r.missing });
+  });
+
+  if(countEl) countEl.textContent = drafts.length;
+
+  readyEl.innerHTML = ready.length ? ready.map(p=>`
+    <div class="ready-item">
+      <div>
+        <strong>${p.name}</strong>
+        <div class="hint">${p.category_name || 'Uncategorised'} · ${p.stock} in stock · EGP ${Number(p.price).toLocaleString()}</div>
+      </div>
+      <div class="row-actions">
+        <button onclick="editProduct('${p.id}')">Edit</button>
+        <button onclick="quickPublish('${p.id}','active')" style="background:var(--accent); color:#0c0d10; border-color:var(--accent); font-weight:600;">Publish</button>
+      </div>
+    </div>`).join('') : `<div class="hint">Nothing ready yet — complete a draft below and it'll move up here.</div>`;
+
+  needsEl.innerHTML = needsInfo.length ? needsInfo.map(p=>`
+    <div class="needsinfo-item">
+      <div>
+        <strong>${p.name}</strong>
+        <div class="missing-tags">${p.missing.map(m=>`<span class="missing-tag">${m} missing</span>`).join('')}</div>
+      </div>
+      <div class="row-actions">
+        <button onclick="editProduct('${p.id}')">Finish this product</button>
+      </div>
+    </div>`).join('') : `<div class="hint">No drafts waiting on info — nice and tidy.</div>`;
+}
+
+function renderStats(){
+  document.getElementById('statActive').textContent = PRODUCTS.filter(p=>p.status==='active').length;
+  document.getElementById('statDrafts').textContent = PRODUCTS.filter(p=>p.status==='draft').length;
+  document.getElementById('statSale').textContent = PRODUCTS.filter(p=>p.final_price!=null && p.final_price<p.price && p.status==='active').length;
+  document.getElementById('statLow').textContent = PRODUCTS.filter(p=>p.stock>0 && p.stock<=5).length;
+  document.getElementById('statOut').textContent = PRODUCTS.filter(p=>p.stock<=0).length;
+}
+
+function renderDraftAlert(){
+  const wrap = document.getElementById('draftAlertWrap');
+  if(!wrap) return;
+  const drafts = PRODUCTS.filter(p=>p.status==='draft');
+  if(!drafts.length){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `
+    <div class="panel" style="background:rgba(201,162,39,0.08); border-color:var(--warn); padding:14px 16px; margin-bottom:16px;">
+      <div style="font-weight:600; margin-bottom:4px;">🕓 ${drafts.length} product${drafts.length>1?'s':''} awaiting publish</div>
+      <div class="hint" style="margin-bottom:10px;">Nothing here shows on the storefront until you publish it. Some of these may have come from a lot and still need a price check, image, or details filled in before shoppers see them.</div>
+      ${drafts.map(p=>`
+        <span class="pill draft" style="margin:0 6px 6px 0; display:inline-flex; gap:8px; align-items:center;">
+          ${p.name}
+          <button onclick="editProduct('${p.id}')" style="font-size:10px; background:transparent; color:var(--dim); border:1px solid var(--line); border-radius:3px; padding:2px 6px;">Edit</button>
+          <button onclick="quickPublish('${p.id}','active')" style="font-size:10px; background:var(--accent); color:#0c0d10; border:none; border-radius:3px; padding:2px 6px; font-weight:600;">Publish</button>
+        </span>`).join('')}
+    </div>`;
+}
+
+async function quickPublish(id, status){
+  const { error } = await sb.from('products').update({ status }).eq('id', id);
+  if(error){ alert('Could not update status: ' + error.message); return; }
+  await loadProducts();
+  showToast(status==='active' ? 'Product published — now visible to shoppers.' : 'Product unpublished — hidden from the storefront.');
+}
+
+function renderTable(){
+  const body = document.getElementById('productTable');
+  renderDraftAlert();
+  if(!PRODUCTS.length){
+    body.innerHTML = `<tr class="empty-row"><td colspan="6">No products yet — add your first one.</td></tr>`;
+    return;
+  }
+  body.innerHTML = PRODUCTS.map(p=>{
+    const sale = p.final_price!=null && p.final_price<p.price;
+    const isActive = p.status==='active';
+    return `
+    <tr>
+      <td>
+        <div class="swatch-cell">
+          <span class="swatch" style="background:${p.swatch_color||'#7c2430'}"></span>
+          <div>${p.name}<div class="hint">${p.hc_id||''} ${p.category_name?('· '+p.category_name):''}</div></div>
+        </div>
+      </td>
+      <td class="mono">${p.sku||'—'}</td>
+      <td class="mono">EGP ${p.price!=null ? Number(sale?p.final_price:p.price).toLocaleString() : '—'}${sale?` <span class="pill sale">sale</span>`:''}</td>
+      <td class="mono ${p.stock<=5?'stock-low':''}">${p.stock}</td>
+      <td><span class="pill ${isActive?'active':'draft'}">${p.status}</span></td>
+      <td>
+        <div class="row-actions">
+          <button onclick="quickPublish('${p.id}','${isActive?'draft':'active'}')" style="${isActive?'':'color:var(--accent); border-color:var(--accent);'}">${isActive?'Unpublish':'Publish'}</button>
+          <button onclick="editProduct('${p.id}')">Edit</button>
+          <button onclick="deleteProduct('${p.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editProduct(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  if(!p) return;
+  showTab('products');
+  document.getElementById('formTitle').textContent = 'Edit product';
+  document.getElementById('editId').value = p.id;
+  document.getElementById('fName').value = p.name || '';
+  document.getElementById('fHcId').value = p.hc_id || '';
+  document.getElementById('fSku').value = p.sku || '';
+  document.getElementById('fCategory').value = p.category_name || '';
+  document.getElementById('fMainImage').value = p.main_image_url || '';
+  document.getElementById('fPrice').value = p.price ?? '';
+  document.getElementById('fFinalPrice').value = p.final_price ?? '';
+  document.getElementById('fPattern').value = p.pattern || 'solid';
+  document.getElementById('fColor').value = p.swatch_color || '#7c2430';
+  document.getElementById('fStock').value = p.stock;
+  document.getElementById('fStatus').value = p.status;
+  document.getElementById('fVendor').value = p.vendor_id || '';
+  document.getElementById('fDesc').value = p.description || '';
+  loadExtraImages(p.id);
+  document.getElementById('cancelEdit').style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function loadExtraImages(productId){
+  const { data } = await sb.from('product_media').select('url').eq('product_id', productId).order('sort_order');
+  document.getElementById('fExtraImages').value = (data||[]).map(m=>m.url).join('\n');
+}
+
+function resetForm(){
+  document.getElementById('productForm').reset();
+  document.getElementById('editId').value = '';
+  document.getElementById('formTitle').textContent = 'Add new product';
+  document.getElementById('cancelEdit').style.display = 'none';
+  document.getElementById('fColor').value = '#7c2430';
+}
+document.getElementById('cancelEdit').addEventListener('click', resetForm);
+
+document.getElementById('fFinalPrice').addEventListener('input', ()=>{
+  const price = parseFloat(document.getElementById('fPrice').value)||0;
+  const final = parseFloat(document.getElementById('fFinalPrice').value);
+  const hint = document.getElementById('priceHint');
+  if(!isNaN(final) && final > price){
+    hint.textContent = 'Final price cannot be higher than price.';
+    hint.className = 'hint err';
+  }else if(!isNaN(final) && price>0){
+    hint.textContent = `${Math.round((1-final/price)*100)}% discount will be shown to shoppers.`;
+    hint.className = 'hint';
+  }else{
+    hint.textContent = 'Leave empty — no discount, price is charged as-is.';
+    hint.className = 'hint';
+  }
+});
+
+document.getElementById('productForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const price = parseFloat(document.getElementById('fPrice').value);
+  const finalRaw = document.getElementById('fFinalPrice').value;
+  const final_price = finalRaw === '' ? null : parseFloat(finalRaw);
+
+  if(final_price !== null && final_price > price){
+    alert('Final price cannot exceed the original price.');
+    return;
+  }
+
+  const submitBtn = e.target.querySelector('button[type=submit]');
+  submitBtn.disabled = true;
+  try{
+    const editId = document.getElementById('editId').value;
+    const categoryName = document.getElementById('fCategory').value.trim();
+    const category_id = categoryName ? await findOrCreateCategory(categoryName) : null;
+    const name = document.getElementById('fName').value.trim();
+    const stock = parseInt(document.getElementById('fStock').value, 10) || 0;
+    const vendorVal = document.getElementById('fVendor').value;
+
+    const productData = {
+      hc_id: document.getElementById('fHcId').value.trim().toUpperCase() || null,
+      name,
+      sku: document.getElementById('fSku').value.trim() || null,
+      category_id,
+      main_image_url: document.getElementById('fMainImage').value.trim() || null,
+      price, final_price,
+      pattern: document.getElementById('fPattern').value,
+      swatch_color: document.getElementById('fColor').value,
+      status: document.getElementById('fStatus').value,
+      vendor_id: vendorVal || null,
+      description: document.getElementById('fDesc').value.trim() || null,
+      last_edited_by: CURRENT_SESSION.user.email,
+    };
+
+    let productId = editId;
+    if(editId){
+      const { error } = await sb.from('products').update(productData).eq('id', editId);
+      if(error) throw error;
+    }else{
+      productData.slug = slugify(name) + '-' + Math.random().toString(36).slice(2,6);
+      const { data, error } = await sb.from('products').insert(productData).select('id').single();
+      if(error) throw error;
+      productId = data.id;
+    }
+
+    // Inventory — absolute set, via the same atomic RPC every other write
+    // path uses, so this can't fork into a second row alongside one a
+    // restock created for the same product.
+    await setStock(productId, stock);
+
+    // Additional images — replace the full set each save
+    const extraUrls = document.getElementById('fExtraImages').value
+      .split('\n').map(s=>s.trim()).filter(Boolean);
+    await sb.from('product_media').delete().eq('product_id', productId);
+    if(extraUrls.length){
+      await sb.from('product_media').insert(
+        extraUrls.map((url, i) => ({ product_id: productId, url, sort_order: i }))
+      );
+    }
+
+    await loadProducts();
+    resetForm();
+    showToast(editId ? 'Product updated — storefront updated.' : 'Product added — storefront updated.');
+  }catch(err){
+    console.error(err);
+    alert('Could not save product: ' + (err.message || err));
+  }finally{
+    submitBtn.disabled = false;
+  }
+});
+
+async function deleteProduct(id){
+  if(!confirm('Delete this product? This also removes its images and inventory record.')) return;
+  const { error } = await sb.from('products').delete().eq('id', id);
+  if(error){ alert('Could not delete: ' + error.message); return; }
+  await loadProducts();
+  showToast('Product removed — storefront updated.');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ---------------------------------------------------------- */
+/* SITE CONTENT                                                 */
+/* ---------------------------------------------------------- */
+const CONTENT_DEFAULTS = {
+  hero_eyebrow: 'Atelier collection — Paris',
+  hero_line1: 'The art of',
+  hero_line2: 'the knot, tied properly.',
+  hero_body: 'Hand-finished silk cravates, woven in small batches. Every piece in this catalog is sourced, priced, and stocked in real time — nothing here is a placeholder.',
+  footer_note: 'Catalog synced live from the store database.',
+  categories_order: 'Silk, Cotton, Wool',
+  banner_enabled: 'false',
+  banner_type: 'image',
+  banner_media_url: '',
+  banner_link_url: '',
+  banner_caption: ''
+};
+
+async function loadContent(){
+  const { data, error } = await sb.from('site_content').select('key,value');
+  const map = { ...CONTENT_DEFAULTS };
+  if(!error && data) data.forEach(row => { if(row.value != null) map[row.key] = row.value; });
+  document.getElementById('sEyebrow').value = map.hero_eyebrow;
+  document.getElementById('sFooter').value = map.footer_note;
+  document.getElementById('sHero1').value = map.hero_line1;
+  document.getElementById('sHero2').value = map.hero_line2;
+  document.getElementById('sHeroBody').value = map.hero_body;
+  document.getElementById('sCategories').value = map.categories_order;
+  document.getElementById('sBannerEnabled').value = map.banner_enabled;
+  document.getElementById('sBannerType').value = map.banner_type;
+  document.getElementById('sBannerUrl').value = map.banner_media_url;
+  document.getElementById('sBannerLink').value = map.banner_link_url;
+  document.getElementById('sBannerCaption').value = map.banner_caption;
+}
+
+document.getElementById('saveContentBtn').addEventListener('click', async ()=>{
+  const rows = [
+    { key:'hero_eyebrow',      value: document.getElementById('sEyebrow').value },
+    { key:'footer_note',       value: document.getElementById('sFooter').value },
+    { key:'hero_line1',        value: document.getElementById('sHero1').value },
+    { key:'hero_line2',        value: document.getElementById('sHero2').value },
+    { key:'hero_body',         value: document.getElementById('sHeroBody').value },
+    { key:'categories_order',  value: document.getElementById('sCategories').value },
+    { key:'banner_enabled',    value: document.getElementById('sBannerEnabled').value },
+    { key:'banner_type',       value: document.getElementById('sBannerType').value },
+    { key:'banner_media_url',  value: document.getElementById('sBannerUrl').value.trim() },
+    { key:'banner_link_url',   value: document.getElementById('sBannerLink').value.trim() },
+    { key:'banner_caption',    value: document.getElementById('sBannerCaption').value.trim() },
+  ].map(r => ({ ...r, updated_by: CURRENT_SESSION.user.id }));
+  const { error } = await sb.from('site_content').upsert(rows, { onConflict:'key' });
+  if(error){ alert('Could not save content: ' + error.message); return; }
+  showToast('Content saved — storefront updated live.');
+});
+
+/* ---------------------------------------------------------- */
+/* MARKETING — discount codes, campaigns, subscribers            */
+/* ---------------------------------------------------------- */
+async function loadMarketing(){
+  const [{ data: codes }, { data: campaigns }, { count: subCount }] = await Promise.all([
+    sb.from('discount_codes').select('*').order('created_at', { ascending:false }),
+    sb.from('campaign_performance').select('*'),
+    sb.from('email_subscribers').select('id', { count:'exact', head:true }).eq('is_subscribed', true)
+  ]);
+
+  document.getElementById('statCodes').textContent = (codes||[]).filter(c=>c.is_active).length;
+  document.getElementById('statCampaigns').textContent = (campaigns||[]).length;
+  document.getElementById('statSubs').textContent = subCount || 0;
+
+  document.getElementById('discountTable').innerHTML = (codes && codes.length) ? codes.map(c=>`
+    <tr>
+      <td class="mono">${c.code}</td>
+      <td>${c.discount_type==='percent' ? c.value+'%' : 'EGP '+c.value}</td>
+      <td class="mono">${c.times_used}${c.usage_limit ? ' / '+c.usage_limit : ''}</td>
+      <td><div class="row-actions"><button onclick="toggleCode('${c.id}', ${c.is_active})">${c.is_active?'Disable':'Enable'}</button></div></td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="4">No codes yet.</td></tr>`;
+
+  document.getElementById('campaignTable').innerHTML = (campaigns && campaigns.length) ? campaigns.map(c=>`
+    <tr><td>${c.name}<div class="hint">${c.channel} · ${c.utm_campaign}</div></td><td class="mono">${c.orders_count}</td><td class="mono">EGP ${Number(c.revenue).toLocaleString()}</td></tr>
+  `).join('') : `<tr class="empty-row"><td colspan="3">No campaigns yet.</td></tr>`;
+}
+
+document.getElementById('discountForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const code = document.getElementById('dCode').value.trim().toUpperCase();
+  const { error } = await sb.from('discount_codes').insert({
+    code,
+    discount_type: document.getElementById('dType').value,
+    value: parseFloat(document.getElementById('dValue').value),
+    min_order_total: parseFloat(document.getElementById('dMinOrder').value)||0,
+    usage_limit: document.getElementById('dUsageLimit').value ? parseInt(document.getElementById('dUsageLimit').value) : null,
+    created_by: CURRENT_SESSION.user.id
+  });
+  if(error){ alert(error.code==='23505' ? 'That code already exists.' : error.message); return; }
+  e.target.reset();
+  await loadMarketing();
+  showToast('Discount code created — live at checkout.');
+});
+
+async function toggleCode(id, currentlyActive){
+  const { error } = await sb.from('discount_codes').update({ is_active: !currentlyActive }).eq('id', id);
+  if(error){ alert(error.message); return; }
+  await loadMarketing();
+}
+
+document.getElementById('cUtm').addEventListener('input', (e)=>{
+  const slug = e.target.value.trim();
+  document.getElementById('utmPreview').textContent = slug
+    ? `?utm_source=...&utm_campaign=${slug}`
+    : '';
+});
+
+document.getElementById('campaignForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const utm_campaign = document.getElementById('cUtm').value.trim();
+  const channel = document.getElementById('cChannel').value;
+  const { error } = await sb.from('marketing_campaigns').insert({
+    name: document.getElementById('cName').value.trim(),
+    channel,
+    utm_source: channel,
+    utm_medium: 'paid',
+    utm_campaign,
+    budget: document.getElementById('cBudget').value ? parseFloat(document.getElementById('cBudget').value) : null,
+    created_by: CURRENT_SESSION.user.id
+  });
+  if(error){ alert(error.code==='23505' ? 'That UTM slug is already in use.' : error.message); return; }
+  e.target.reset();
+  document.getElementById('utmPreview').textContent = '';
+  await loadMarketing();
+  showToast('Campaign created — tag its links with this UTM slug to track it.');
+});
+
+/* ---------------------------------------------------------- */
+/* INVENTORY — stock levels + vendors + vendor contacts          */
+/* ---------------------------------------------------------- */
+async function loadVendors(){
+  const [{ data: vendors, error: vErr }, { data: contacts, error: cErr }] = await Promise.all([
+    sb.from('vendors').select('*').order('name'),
+    sb.from('vendor_contacts').select('*').order('created_at')
+  ]);
+  if(vErr){ console.error(vErr); return; }
+  const contactsByVendor = {};
+  (contacts||[]).forEach(c=>{
+    (contactsByVendor[c.vendor_id] ||= []).push(c);
+  });
+  VENDORS = (vendors||[]).map(v=>({ ...v, contacts: contactsByVendor[v.id]||[] }));
+  renderVendorList();
+  renderVendorSelect();
+  renderStockTable();
+  document.getElementById('statVendors').textContent = VENDORS.length;
+  const countVen = document.getElementById('countVendors');
+  if(countVen) countVen.textContent = VENDORS.length;
+}
+
+function renderVendorSelect(){
+  // Product form dropdown
+  const fSel = document.getElementById('fVendor');
+  const fCur = fSel.value;
+  fSel.innerHTML = '<option value="">— none —</option>' +
+    VENDORS.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  fSel.value = fCur;
+
+  // Lot vendor dropdown
+  const lSel = document.getElementById('lVendor');
+  if(lSel){
+    const lCur = lSel.value;
+    lSel.innerHTML = '<option value="">Select vendor…</option>' +
+      VENDORS.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+    lSel.value = lCur;
+  }
+
+  // Needed-item request vendor dropdown
+  const rSel = document.getElementById('rVendor');
+  if(rSel){
+    const rCur = rSel.value;
+    rSel.innerHTML = '<option value="">Any</option>' +
+      VENDORS.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+    rSel.value = rCur;
+  }
+}
+
+function renderVendorList(){
+  const wrap = document.getElementById('vendorList');
+  if(!VENDORS.length){
+    wrap.innerHTML = `<div class="hint" style="padding:16px 0">No vendors yet — add your first one.</div>`;
+    return;
+  }
+  wrap.innerHTML = VENDORS.map(v=>`
+    <div class="vendor-card">
+      <div class="vhead">
+        <div>
+          <div class="vname">${v.name}</div>
+          <div class="hint">${v.location || 'No location set'} · Shipment fee: EGP ${Number(v.shipment_fee||0).toLocaleString()}</div>
+          ${v.notes ? `<div class="hint" style="margin-top:4px;">${v.notes}</div>` : ''}
+        </div>
+        <div class="row-actions">
+          <button onclick="selectVendorForContact('${v.id}', ${JSON.stringify(v.name)})">+ Contact</button>
+          <button onclick="editVendor('${v.id}')">Edit</button>
+          <button onclick="deleteVendor('${v.id}')">Delete</button>
+        </div>
+      </div>
+      ${v.contacts.length ? `
+        <table style="margin-top:10px;">
+          <tbody>
+            ${v.contacts.map(c=>`
+              <tr class="contact-row">
+                <td class="mono">${c.label || 'Contact'}</td>
+                <td>${c.phone || '—'}</td>
+                <td>${c.email || ''}</td>
+                <td style="text-align:right;"><button onclick="deleteContact('${c.id}')" style="font-size:11px; color:var(--dim); background:none; border:none; text-decoration:underline;">remove</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>` : `<div class="hint" style="margin-top:8px;">No contacts yet.</div>`}
+    </div>
+  `).join('');
+}
+
+function selectVendorForContact(id, name){
+  document.getElementById('cVendorId').value = id;
+  document.getElementById('contactVendorLabel').textContent = `→ ${name}`;
+  document.getElementById('ctLabel').focus();
+}
+
+document.getElementById('vendorForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const editId = document.getElementById('editVendorId').value;
+  const payload = {
+    name: document.getElementById('vName').value.trim(),
+    location: document.getElementById('vLocation').value.trim() || null,
+    shipment_fee: parseFloat(document.getElementById('vShipFee').value) || 0,
+    notes: document.getElementById('vNotes').value.trim() || null,
+  };
+  const { error } = editId
+    ? await sb.from('vendors').update(payload).eq('id', editId)
+    : await sb.from('vendors').insert(payload);
+  if(error){ alert('Could not save vendor: ' + error.message); return; }
+  resetVendorForm();
+  await loadVendors();
+  showToast('Vendor saved.');
+});
+
+function editVendor(id){
+  const v = VENDORS.find(x=>x.id===id);
+  if(!v) return;
+  document.getElementById('editVendorId').value = v.id;
+  document.getElementById('vendorFormTitle').textContent = 'Edit vendor';
+  document.getElementById('vName').value = v.name;
+  document.getElementById('vLocation').value = v.location || '';
+  document.getElementById('vShipFee').value = v.shipment_fee || 0;
+  document.getElementById('vNotes').value = v.notes || '';
+  document.getElementById('cancelVendorEdit').style.display = 'block';
+  document.getElementById('vName').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function resetVendorForm(){
+  document.getElementById('vendorForm').reset();
+  document.getElementById('editVendorId').value = '';
+  document.getElementById('vendorFormTitle').textContent = 'Add vendor';
+  document.getElementById('cancelVendorEdit').style.display = 'none';
+}
+document.getElementById('cancelVendorEdit').addEventListener('click', resetVendorForm);
+
+async function deleteVendor(id){
+  if(!confirm('Delete this vendor? Products, lots, and requests referencing it will be unassigned — their history stays intact.')) return;
+  const { error } = await sb.from('vendors').delete().eq('id', id);
+  if(error){ alert(error.message); return; }
+  await loadVendors();
+  showToast('Vendor removed.');
+}
+
+document.getElementById('contactForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const vendor_id = document.getElementById('cVendorId').value;
+  if(!vendor_id){ alert('Pick a vendor first — click "+ Contact" on one of the vendor cards.'); return; }
+  const { error } = await sb.from('vendor_contacts').insert({
+    vendor_id,
+    label: document.getElementById('ctLabel').value.trim() || null,
+    phone: document.getElementById('ctPhone').value.trim() || null,
+    email: document.getElementById('ctEmail').value.trim() || null,
+  });
+  if(error){ alert('Could not add contact: ' + error.message); return; }
+  e.target.reset();
+  document.getElementById('cVendorId').value = '';
+  document.getElementById('contactVendorLabel').textContent = '';
+  await loadVendors();
+  showToast('Contact added.');
+});
+
+async function deleteContact(id){
+  if(!confirm('Remove this contact?')) return;
+  const { error } = await sb.from('vendor_contacts').delete().eq('id', id);
+  if(error){ alert(error.message); return; }
+  await loadVendors();
+}
+
+function renderStockTable(){
+  const body = document.getElementById('stockTable');
+  if(!PRODUCTS.length){
+    body.innerHTML = `<tr class="empty-row"><td colspan="6">No products yet.</td></tr>`;
+    document.getElementById('statTotalUnits').textContent = 0;
+    document.getElementById('statReorder').textContent = 0;
+    return;
+  }
+  let totalUnits = 0, belowReorder = 0;
+  body.innerHTML = PRODUCTS.map(p=>{
+    totalUnits += p.stock || 0;
+    const low = p.stock <= (p.reorder_level ?? 5);
+    if(low) belowReorder++;
+    return `
+    <tr>
+      <td>${p.name}</td>
+      <td class="mono">${p.sku||'—'}</td>
+      <td class="mono ${low?'stock-low':''}">${p.stock}</td>
+      <td><input type="number" min="0" value="${p.reorder_level ?? 5}" style="width:70px; background:var(--panel-2); border:1px solid var(--line); border-radius:4px; color:var(--text); padding:5px;" onchange="updateReorderLevel('${p.id}', this.value)"></td>
+      <td>
+        <select onchange="assignVendor('${p.id}', this.value)" style="background:var(--panel-2); border:1px solid var(--line); border-radius:4px; color:var(--text); padding:5px;">
+          <option value="">— none —</option>
+          ${VENDORS.map(v=>`<option value="${v.id}" ${p.vendor_id===v.id?'selected':''}>${v.name}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <div class="row-actions">
+          <input type="number" min="1" value="10" id="restock-${p.id}" style="width:56px; background:var(--panel-2); border:1px solid var(--line); border-radius:4px; color:var(--text); padding:5px;">
+          <button onclick="quickRestock('${p.id}')">+ Add</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('statTotalUnits').textContent = totalUnits;
+  document.getElementById('statReorder').textContent = belowReorder;
+}
+
+async function updateReorderLevel(productId, value){
+  const level = parseInt(value,10) || 0;
+  try{
+    await setReorderLevel(productId, level);
+    await loadProducts();
+    showToast('Reorder level updated.');
+  }catch(err){
+    alert(err.message || err);
+  }
+}
+
+async function assignVendor(productId, vendorId){
+  const { error } = await sb.from('products').update({ vendor_id: vendorId || null }).eq('id', productId);
+  if(error){ alert(error.message); return; }
+  await loadProducts();
+  showToast('Vendor assigned.');
+}
+
+async function quickRestock(productId){
+  const input = document.getElementById(`restock-${productId}`);
+  const qty = parseInt(input.value, 10);
+  if(!qty || qty<1) return;
+  try{
+    await adjustStock(productId, qty);
+    await loadProducts();
+    showToast(`Restocked +${qty} units — storefront updated.`);
+  }catch(err){
+    alert(err.message || err);
+  }
+}
+
+/* ---------------------------------------------------------- */
+/* LOTS — vendor shipments: what came in, from whom, at what cost */
+/* ---------------------------------------------------------- */
+let lotItemRowCount = 0;
+
+function addLotItemRow(){
+  lotItemRowCount++;
+  const rowId = `lotitem-${lotItemRowCount}`;
+  const wrap = document.getElementById('lotItemsWrap');
+  const row = document.createElement('div');
+  row.id = rowId;
+  row.style = 'background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:10px;';
+  row.innerHTML = `
+    <div class="field-row" style="margin-bottom:10px;">
+      <div class="field" style="margin-bottom:0;">
+        <label>Type</label>
+        <select class="li-type" onchange="toggleLotItemType('${rowId}')">
+          <option value="restock">Restock (existing product)</option>
+          <option value="new">New product</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Quantity</label>
+        <input type="number" class="li-qty" min="1" value="1">
+      </div>
+    </div>
+    <div class="li-restock-fields field">
+      <label>Product</label>
+      <select class="li-product" onchange="autofillLotItem('${rowId}')">
+        <option value="">Select product…</option>
+        ${PRODUCTS.map(p=>`<option value="${p.id}" data-category="${p.category_name||''}" data-color="${p.swatch_color||''}">${p.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="li-new-fields field" style="display:none;">
+      <label>New product name</label>
+      <input type="text" class="li-name" placeholder="e.g. Emerald Paisley Cravate">
+    </div>
+    <div class="field-row" style="margin-bottom:10px;">
+      <div class="field" style="margin-bottom:0;">
+        <label>Category</label>
+        <input type="text" class="li-category" placeholder="Silk">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Colour</label>
+        <input type="color" class="li-color" value="#7c2430" style="padding:2px;height:37px;">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:8px;">
+      <label>Unit cost (EGP / piece — what it came in at)</label>
+      <input type="number" class="li-cost" min="0" step="0.01" value="0">
+    </div>
+    <button type="button" class="btn" style="width:100%; font-size:12px;" onclick="document.getElementById('${rowId}').remove()">Remove item</button>
+  `;
+  wrap.appendChild(row);
+}
+
+function toggleLotItemType(rowId){
+  const row = document.getElementById(rowId);
+  const type = row.querySelector('.li-type').value;
+  row.querySelector('.li-restock-fields').style.display = type==='restock' ? 'block' : 'none';
+  row.querySelector('.li-new-fields').style.display = type==='new' ? 'block' : 'none';
+}
+
+function autofillLotItem(rowId){
+  const row = document.getElementById(rowId);
+  const opt = row.querySelector('.li-product').selectedOptions[0];
+  if(!opt || !opt.value) return;
+  if(opt.dataset.category) row.querySelector('.li-category').value = opt.dataset.category;
+  if(opt.dataset.color) row.querySelector('.li-color').value = opt.dataset.color;
+}
+
+/* saveLot() — the entire "Received" write is ONE call to the save_lot()
+   Postgres function (see monsieur_pipeline_fixes.sql). Every item, new
+   or restock, resolves to a single product_id, and that same id is what
+   the inventory bump, the lot_items row, and the fulfilled-request flag
+   all key off — inside one database transaction. Either the whole lot
+   lands consistently across every table, or none of it does; there is
+   no window where lot history and stock can disagree about the same
+   product, even if the connection drops mid-save. */
+async function saveLot(){
+  const vendor_id = document.getElementById('lVendor').value;
+  if(!vendor_id){ alert('Pick a vendor for this lot.'); return; }
+  const rows = Array.from(document.querySelectorAll('#lotItemsWrap > div'));
+  if(!rows.length){ alert('Add at least one item to this lot.'); return; }
+
+  const items = [];
+  for(const row of rows){
+    const type = row.querySelector('.li-type').value;
+    const qty = parseInt(row.querySelector('.li-qty').value, 10) || 0;
+    const cost = parseFloat(row.querySelector('.li-cost').value) || 0;
+    const category = row.querySelector('.li-category').value.trim() || null;
+    const color = row.querySelector('.li-color').value || null;
+    const fulfillsRequest = row.dataset.fulfillsRequest || null;
+    if(qty < 1) continue;
+    if(type === 'restock'){
+      const sel = row.querySelector('.li-product');
+      if(!sel.value) continue;
+      const p = PRODUCTS.find(x=>x.id===sel.value);
+      items.push({ product_id: sel.value, product_name: p?.name || 'Product', category, color, is_new_product:false, quantity:qty, unit_cost:cost, fulfillsRequest });
+    }else{
+      const name = row.querySelector('.li-name').value.trim();
+      if(!name) continue;
+      items.push({ product_id:null, product_name:name, category, color, is_new_product:true, quantity:qty, unit_cost:cost, fulfillsRequest });
+    }
+  }
+  if(!items.length){ alert('Fill in at least one valid item — a product (or new-item name) and a quantity.'); return; }
+
+  const received_date = document.getElementById('lDate').value || new Date().toISOString().slice(0,10);
+  const reference = document.getElementById('lReference').value.trim() || null;
+
+  const rpcItems = items.map(i => ({
+    is_new_product: i.is_new_product,
+    product_id: i.product_id || null,
+    product_name: i.product_name,
+    category: i.category,
+    color: i.color,
+    quantity: i.quantity,
+    unit_cost: i.unit_cost,
+    fulfills_request: i.fulfillsRequest || null
+  }));
+
+  const saveBtn = document.getElementById('saveLotBtn');
+  saveBtn.disabled = true;
+  try{
+    const { error } = await sb.rpc('save_lot', {
+      p_vendor_id: vendor_id,
+      p_reference: reference,
+      p_received_date: received_date,
+      p_shipment_days: document.getElementById('lShipDays').value ? parseInt(document.getElementById('lShipDays').value,10) : null,
+      p_shipment_fee: parseFloat(document.getElementById('lShipFee').value) || 0,
+      p_commission_fee: parseFloat(document.getElementById('lCommission').value) || 0,
+      p_notes: document.getElementById('lNotes').value.trim() || null,
+      p_items: rpcItems
+    });
+    if(error) throw error;
+
+    const fulfilledCount = items.filter(i=>i.fulfillsRequest).length;
+    const newCount = items.filter(i=>i.is_new_product).length;
+
+    document.getElementById('lotItemsWrap').innerHTML = '';
+    document.getElementById('lReference').value = '';
+    document.getElementById('lShipDays').value = '';
+    document.getElementById('lShipFee').value = 0;
+    document.getElementById('lCommission').value = 0;
+    document.getElementById('lNotes').value = '';
+
+    await Promise.all([loadProducts(), loadLots(), fulfilledCount ? loadRequests() : Promise.resolve()]);
+    showToast(newCount
+      ? `Lot saved — stock updated. ${newCount} new product(s) created as drafts — publish them from the Products tab when ready.`
+      : 'Lot saved — stock updated.');
+  }catch(err){
+    console.error(err);
+    const missingFn = (err.message || '').includes('save_lot') || err.code === 'PGRST202';
+    alert('Could not save lot: ' + (err.message || err) + (missingFn ? '\n\nRun monsieur_pipeline_fixes.sql in the Supabase SQL Editor first.' : ''));
+  }finally{
+    saveBtn.disabled = false;
+  }
+}
+
+async function loadLots(){
+  const { data, error } = await sb.from('lots')
+    .select('*, vendors(name), lot_items(id, quantity, unit_cost, is_new_product)')
+    .order('received_date', { ascending:false });
+  if(error){ console.error(error); return; }
+  LOTS = data || [];
+  renderLotTable();
+  const countRec = document.getElementById('countReceived');
+  if(countRec) countRec.textContent = LOTS.length;
+}
+
+function renderLotTable(){
+  const body = document.getElementById('lotTable');
+  if(!LOTS.length){
+    body.innerHTML = `<tr class="empty-row"><td colspan="6">No lots logged yet.</td></tr>`;
+    return;
+  }
+  body.innerHTML = LOTS.map(l=>{
+    const items = l.lot_items || [];
+    const pieceCount = items.reduce((s,i)=>s + i.quantity, 0);
+    const itemsCost = items.reduce((s,i)=>s + i.quantity * Number(i.unit_cost||0), 0);
+    const fees = Number(l.shipment_fee||0) + Number(l.commission_fee||0);
+    const newCount = items.filter(i=>i.is_new_product).length;
+    return `
+    <tr>
+      <td>${l.reference || '—'}${newCount ? ` <span class="pill sale">${newCount} new</span>` : ''}</td>
+      <td>${l.vendors?.name || '—'}</td>
+      <td class="mono">${pieceCount} pcs</td>
+      <td class="mono">EGP ${(itemsCost+fees).toLocaleString()}</td>
+      <td class="mono">EGP ${fees.toLocaleString()}</td>
+      <td class="mono">${l.received_date}${l.shipment_days!=null ? ` · ${l.shipment_days}d` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------------------------------------------------- */
+/* NEEDED FROM VENDORS — reminder / request list                */
+/* ---------------------------------------------------------- */
+async function loadRequests(){
+  const { data, error } = await sb.from('restock_requests')
+    .select('*, vendors(name)').order('created_at', { ascending:false });
+  if(error){ console.error(error); return; }
+  REQUESTS = data || [];
+  renderRequestTable();
+  renderLowStockSuggestions();
+  document.getElementById('statNeeded').textContent = REQUESTS.filter(r=>r.status==='needed').length;
+  const countReq = document.getElementById('countRequested');
+  if(countReq) countReq.textContent = REQUESTS.filter(r=>r.status!=='fulfilled').length;
+}
+
+function renderLowStockSuggestions(){
+  const wrap = document.getElementById('lowStockSuggestions');
+  if(!wrap) return;
+  const openProductIds = new Set(REQUESTS.filter(r=>r.status!=='fulfilled' && r.product_id).map(r=>r.product_id));
+  const low = PRODUCTS.filter(p => p.stock <= (p.reorder_level ?? 5) && !openProductIds.has(p.id));
+  if(!low.length){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div class="hint" style="margin-bottom:8px;">Low stock, not yet on the list — click to add:</div>` +
+    low.map(p => `<button type="button" class="pill draft" style="margin:0 6px 6px 0; border:1px solid var(--line); cursor:pointer;" onclick="quickAddRequest('${p.id}')">${p.name} · ${p.stock} left  +</button>`).join('');
+}
+
+async function quickAddRequest(productId){
+  const p = PRODUCTS.find(x=>x.id===productId);
+  if(!p) return;
+  const suggestedQty = Math.max((p.reorder_level ?? 5) * 2 - p.stock, 1);
+  const { error } = await sb.from('restock_requests').insert({
+    product_id: p.id,
+    item_name: p.name,
+    category: p.category_name || null,
+    color: p.swatch_color || null,
+    vendor_id: p.vendor_id || null,
+    quantity_needed: suggestedQty,
+    priority: 'high',
+    requested_by: CURRENT_SESSION.user.id
+  });
+  if(error){ alert(error.message); return; }
+  await loadRequests();
+  showToast('Added to the needed list.');
+}
+
+document.getElementById('requestForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const { error } = await sb.from('restock_requests').insert({
+    item_name: document.getElementById('rItemName').value.trim(),
+    category: document.getElementById('rCategory').value.trim() || null,
+    color: document.getElementById('rColor').value || null,
+    vendor_id: document.getElementById('rVendor').value || null,
+    quantity_needed: parseInt(document.getElementById('rQty').value, 10) || 1,
+    priority: document.getElementById('rPriority').value,
+    requested_by: CURRENT_SESSION.user.id
+  });
+  if(error){ alert(error.message); return; }
+  e.target.reset();
+  document.getElementById('rColor').value = '#7c2430';
+  document.getElementById('rPriority').value = 'medium';
+  await loadRequests();
+  showToast('Added to the needed list.');
+});
+
+function renderRequestTable(){
+  const body = document.getElementById('requestTable');
+  if(!REQUESTS.length){
+    body.innerHTML = `<tr class="empty-row"><td colspan="6">Nothing needed right now.</td></tr>`;
+    return;
+  }
+  body.innerHTML = REQUESTS.map(r=>`
+    <tr>
+      <td>${r.item_name}<div class="hint">${[r.category, r.color ? `<span class="swatch" style="background:${r.color}; display:inline-block; vertical-align:middle;"></span>` : ''].filter(Boolean).join(' · ')}</div></td>
+      <td>${r.vendors?.name || 'Any'}</td>
+      <td class="mono">${r.quantity_needed}</td>
+      <td><span class="pill ${r.priority==='high'?'sale':(r.priority==='low'?'draft':'active')}">${r.priority}</span></td>
+      <td><span class="pill ${r.status==='fulfilled'?'active':(r.status==='ordered'?'sale':'draft')}">${r.status}</span></td>
+      <td>
+        <div class="row-actions">
+          <button onclick="startLotFromRequest('${r.id}')">Start lot</button>
+          ${r.status!=='ordered' ? `<button onclick="setRequestStatus('${r.id}','ordered')">Mark ordered</button>` : ''}
+          ${r.status!=='fulfilled' ? `<button onclick="setRequestStatus('${r.id}','fulfilled')">Fulfilled</button>` : ''}
+          <button onclick="deleteRequest('${r.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function setRequestStatus(id, status){
+  const { error } = await sb.from('restock_requests').update({ status }).eq('id', id);
+  if(error){ alert(error.message); return; }
+  await loadRequests();
+}
+
+async function deleteRequest(id){
+  if(!confirm('Remove this from the needed list?')) return;
+  const { error } = await sb.from('restock_requests').delete().eq('id', id);
+  if(error){ alert(error.message); return; }
+  await loadRequests();
+}
+
+boot();
+</script>
+</body>
+</html>
